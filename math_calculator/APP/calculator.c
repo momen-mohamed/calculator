@@ -107,12 +107,25 @@ void handleNumberPressed(u8 keyPressed){
 
 
 void calculate(){
-	//u8 i ;
-	//for (i =0 ; i < operandIndex ; i++)
-	//{
-	//switch(operations[i])
-	//}
-	result = 100;
+	u8 i ;
+	result = operands[0];
+	for (i = 0 ; i < operationIndex ; i++)
+	{
+		switch(operations[i]){
+			case DIV:
+			result /= operands[i+1] ;
+			break;
+			case MUL:
+			result *= operands[i+1] ;
+			break;
+			case ADD:
+			result += operands[i+1] ;
+			break;
+			case SUB:
+			result -= operands[i+1] ;
+			break;
+		}
+	}
 	resultRequested = TRUE;
 }
 
