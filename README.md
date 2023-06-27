@@ -1,9 +1,34 @@
-# Calculator Program
-This program is a simple calculator that allows you to perform basic arithmetic operations using a 4x4 keypad as input and displays the output on an LCD. Before running the code, make sure to check and configure the necessary files (LCD_cfg.h & kpad_cfg.h).
+# Calculator Program for Atmega32
 
-## Usage
-1.Connect the 4x4 keypad to your microcontroller as per the configuration specified in kpad_cfg.h.\n
-2.Connect the LCD display to your microcontroller as per the configuration specified in LCD_cfg.h.\n
-3.Power on the system.\n
-4.Use the keypad to input the numbers and select the desired arithmetic operation.\n
-5.The result will be displayed on the connected LCD
+This repository contains a simple calculator program that runs on the Atmega32 microcontroller. It allows you to perform basic arithmetic operations using a 4x4 keypad as input and displays the output on an LCD.
+
+## Features
+
+- Addition: Perform addition operations between two numbers.
+- Subtraction: Perform subtraction operations between two numbers.
+- Multiplication: Perform multiplication operations between two numbers.
+- Division: Perform division operations between two numbers.
+
+## Hardware Requirements
+
+To run this calculator program, you will need the following hardware components:
+
+- Atmega32 Microcontroller: The program is designed to run specifically on the Atmega32 microcontroller.
+- 4x4 Keypad: Connect a 4x4 keypad to your Atmega32 microcontroller to input numbers and select operations.
+- LCD Display: Connect an LCD display to your Atmega32 microcontroller to display the output.
+
+## Configuration
+
+Before running the code, ensure that the configuration files are set correctly:
+
+- `LCD_cfg.h`: Configure the LCD display according to your hardware setup.
+- `kpad_cfg.h`: Configure the keypad according to your hardware setup.
+
+## Installation
+
+Follow these steps to install and run the calculator program on the Atmega32:
+
+1. Clone the repository:
+
+   ```shell
+   git clone https://github.com/your-username/calculator.git
