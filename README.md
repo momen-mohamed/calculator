@@ -1,4 +1,4 @@
-# Calculator Program for Atmega32
+# Calculator Program on Atmega32
 
 This repository contains a simple calculator program that runs on the Atmega32 microcontroller. It allows you to perform basic arithmetic operations using a 4x4 keypad as input and displays the output on an LCD.
 
