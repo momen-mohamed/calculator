@@ -8,41 +8,35 @@
 #include "DIO_Interface.h"
 #include "KeyPad_Interface.h"
 #include "LCD_Interface.h"
+#include "calculator_private.h"
 #define F_CPU 8000000
 #include "util/delay.h"
 
-typedef enum{
-	DIV,
-	MUL,
-	ADD,
-	SUB
-}OPERATION_type;
 
 
-static OPERATION_type operations[3];
-static s32 operands[3] ;
-static s32 result;
+
+static OPERATION_type operations[OPERATIONS_NUM]; //operations array.
+static s32 operands[OPERANDS_NUM] ; //operands array to store all operands.
+static s32 result; //storing variable
 static u8 operandIndex ;
 static u8 operationIndex ;
-static Bool_t  operandIsLast,isNegative ;
-static u8 cursorPosition;
-static Bool_t didDivByZero,resultRequested,resultDisplayed,allowDisplay ;
+static Bool_t  operandIsLast; //this flag is raised if last input was operand.
+static Bool_t isNegative ; // this flag is raised when minus sign is entered.
+static Bool_t didDivByZero; // this flag is raised when user divide by zero.
+static Bool_t resultRequested; //this flag is raised when = is pressed.
+static Bool_t resultDisplayed; //this flag is raised when result is displayed.
+static Bool_t allowDisplay ; //this flag is raised to allow displaying on LCD.
 
 
 
 
-
-void handleNumberPressed(u8 keyPressed);
-void resetCalculator();
-void handleOperation(u8 operation);
-Bool_t checkNumKeyPressed(u8 keyPressed);
-
-void calculate();
-
+//initialization function.
 void Calculator_init(void){
 	resetCalculator();
 }
 
+
+//runnable function.
 void Calculator_Runnable(void){
 	
 	u8 keyPressed;
@@ -66,54 +60,145 @@ void Calculator_Runnable(void){
 		if (allowDisplay)
 		{
 			LCD_WriteChar(keyPressed);
-			cursorPosition++;
 		}
 		else{
 			allowDisplay = TRUE;
 		}
-		
 		if (resultRequested)
 		{
 			LCD_GoTo(1,0);
-			LCD_WriteNumber(result);
-			cursorPosition = 0;
+			if (!operandIsLast)
+			{
+				LCD_WriteString("MISSING OPERAND");
+			}else if (didDivByZero)
+			{
+				LCD_WriteString("DIVIDE BY ZERO");
+			}
+			else{
+				LCD_WriteNumber(result);
+			}
 			resultRequested = FLASE;
 			resultDisplayed = TRUE;
 		}
 	}
-	
-	
 }
 
 
 
 void handleNumberPressed(u8 keyPressed){
 	s32 concatenationResult;
+	
+	if (resultDisplayed)
+	{
+		resetCalculator();
+	}
+	
 	concatenationResult  = (operands[operandIndex] * 10) + (keyPressed - '0')   ;
 	if (isNegative)
 	{
 		concatenationResult = -concatenationResult;
 		isNegative = FLASE;
 	}
-	if (concatenationResult < (s16)32767 && concatenationResult > (s16)(-32767) )
+	if (concatenationResult <= MAX_S16 && concatenationResult >= MIN_S16 )
 	{
 		operands[operandIndex] = concatenationResult;
 		operandIsLast = TRUE;
 	}else
 	{
+		playBuzz();
 		allowDisplay = FLASE;
 	}
 }
 
+void handleOperation(u8 operation){
+	
+	Bool_t handleOperation = TRUE;
+	
+	//this condition handle the pressing of operation key after displaying result.
+	
+	if (resultDisplayed && (didDivByZero || !operandIsLast ))
+	{
+		handleOperation = FLASE;
+	}else if (resultDisplayed )
+	{
+		resetCalculator();
+		LCD_WriteString("ANS");
+		operands[0] = result;
+		operandIsLast = TRUE;
+	}
+	
+	if (operationIndex < 1 && handleOperation)
+	{
+		switch(operation){
+			case  '/':
+			if (operandIsLast)
+			{
+				operations[operationIndex++] = DIV;
+				operandIndex ++;
+				operandIsLast = FLASE;
+			}
+			break;
+			case '*':
+			if (operandIsLast)
+			{
+				operations[operationIndex++] = MUL;
+				operandIndex ++;
+				operandIsLast = FLASE;
+			}
+			break;
+			case '+':
+			if (operandIsLast)
+			{
+				operations[operationIndex++] = ADD;
+				operandIndex ++;
+				operandIsLast = FLASE;
+			}
+			break;
+			case '-':
+			if (operandIsLast)
+			{
+				operations[operationIndex++] = SUB;
+				operandIndex ++;
+				operandIsLast = FLASE;
+			}
+			else{
+				isNegative = TRUE;
+			}
+			break;
+		}
+	}else if (operation == '-' && handleOperation )
+	{
+		isNegative = TRUE;
+	}
+	else{
+		
+		playBuzz();
+		allowDisplay = FLASE;
+	}
+	
+}
 
 void calculate(){
+	//this condition handle the pressing of numbers key after displaying result.
+	if (resultDisplayed)
+	{
+		allowDisplay = FLASE;
+		playBuzz();
+		return;
+	}
 	u8 i ;
 	result = operands[0];
 	for (i = 0 ; i < operationIndex ; i++)
 	{
 		switch(operations[i]){
 			case DIV:
-			result /= operands[i+1] ;
+			if (operands[i+1] == 0)
+			{
+				didDivByZero = TRUE;
+			}
+			else{
+				result /= operands[i+1] ;
+			}
 			break;
 			case MUL:
 			result *= operands[i+1] ;
@@ -130,45 +215,8 @@ void calculate(){
 }
 
 
-void handleOperation(u8 operation){
-	switch(operation){
-		case  '/':
-		if (operandIsLast)
-		{
-			operations[operationIndex++] = DIV;
-			operandIndex ++;
-			operandIsLast = FLASE;
-		}
-		break;
-		case '*':
-		if (operandIsLast)
-		{
-			operations[operationIndex++] = MUL;
-			operandIndex ++;
-			operandIsLast = FLASE;
-		}
-		break;
-		case '+':
-		if (operandIsLast)
-		{
-			operations[operationIndex++] = ADD;
-			operandIndex ++;
-			operandIsLast = FLASE;
-		}
-		break;
-		case '-':
-		if (operandIsLast)
-		{
-			operations[operationIndex++] = SUB;
-			operandIndex ++;
-			operandIsLast = FLASE;
-			}else{
-			isNegative = TRUE;
-		}
-		break;
-	}
-}
 
+//this function reset the calculator.
 void resetCalculator(){
 	u8 i;
 	LCD_Clear();
@@ -176,16 +224,26 @@ void resetCalculator(){
 	operationIndex = 0;
 	operandIsLast = FLASE;
 	isNegative = FLASE ;
-	cursorPosition = 0;
-	result = 0;
 	didDivByZero = FLASE;
 	resultRequested = FLASE;
 	resultDisplayed = FLASE;
 	allowDisplay = TRUE;
-	for (i = 0 ; i < 3;i++)
+	
+	//these for loop reset operands and operations array ,it facilitate extending calculator and adding more operands and operations.
+	for (i = 0 ; i < OPERATIONS_NUM;i++)
+	{
+		operations[i] = 0;
+	}
+	for (i=0 ; i < OPERANDS_NUM;i++)
 	{
 		operands[i] = 0;
-		operations[i] = 0;
 	}
 }
 
+
+//this function trigger the buzzer
+void playBuzz(){
+	DIO_WritePin(PINC5,HIGH);
+	_delay_ms(40);
+	DIO_WritePin(PINC5,LOW);
+}
